@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { NavLink, Routes, Route, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { NavLink, Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import Articles from './Articles'
 import LoginForm from './LoginForm'
 import Message from './Message'
@@ -16,7 +16,6 @@ export default function App() {
   const [articles, setArticles] = useState([])
   const [currentArticleId, setCurrentArticleId] = useState()
   const [spinnerOn, setSpinnerOn] = useState(false)
-
   // ✨ Research `useNavigate` in React Router v.6
   const navigate = useNavigate()
   const redirectToLogin = () => {
@@ -32,8 +31,10 @@ export default function App() {
     // and a message saying "Goodbye!" should be set in its proper state.
     // In any case, we should redirect the browser back to the login screen,
     // using the helper above.
-    localStorage.removeItem('token')
-    setMessage('Goodbye!')
+    if (window.localStorage.getItem("token")) {
+      localStorage.removeItem('token')
+      setMessage('Goodbye!')
+    }
     redirectToLogin()
   }
     // ✨ implement
@@ -46,19 +47,32 @@ export default function App() {
       setMessage('')
       setSpinnerOn(true)
 
-      try {
-        const response = await axios.post(loginUrl, { username, password })
-        
-        if (response.data) {
-          localStorage.setItem('token', response.data.token)
-          setMessage(response.data.message)
-          redirectToArticles()
-        }
-      } catch (error) {
-        console.error(error)
-      } finally {
+      axios.post(loginUrl, { username, password })
+
+      .then(res => {
+
+        window.localStorage.setItem('token', res.data.token)
+
+        setMessage(res.data.message)
+
+        redirectToArticles()
+
+      })
+
+      .catch(err => {
+
+        const responseMessage = err?.response?.data?.message
+
+        setMessage(responseMessage || `Somethin' horrible logging in: ${err.message}`)
+
+      })
+
+      .finally(() => {
+
         setSpinnerOn(false)
-      }
+
+      })
+
     }
     // ✨ implement
     // We should flush the message state, turn on the spinner
@@ -68,30 +82,38 @@ export default function App() {
     // If something goes wrong, check the status of the response:
     // if it's a 401 the token might have gone bad, and we should redirect to login.
     // Don't forget to turn off the spinner!
-    const getArticles = async () => {
-      setMessage('')
+    const getArticles = () => {
       setSpinnerOn(true)
-    
 
-      try {
-        const response = await axios.get(articlesUrl, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      setMessage('')
+  
+      axios.get(articlesUrl, { headers: { Authorization: localStorage.getItem('token') } })
+  
+        .then(res => {
+  
+          setMessage(res.data.message)
+  
+          setArticles(res.data.articles)
+  
         })
-    
-        if (response.data) {
-          setArticles(response.data.articles)
-          setMessage(response.data.message)
-        }
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          setMessage('Your session has expired. Please log in again.')
-          redirectToLogin()
-        } else {
-          console.error(error)
-        }
-      } finally {
-        setSpinnerOn(false)
-      }
+  
+        .catch(err => {
+  
+          setMessage(err?.response?.data?.message || 'Something bad happened')
+  
+          if (err.response.status == 401) {
+  
+            redirectToLogin()
+  
+          }
+  
+        })
+  
+        .finally(() => {
+  
+          setSpinnerOn(false)
+  
+        })
     }
   
 
@@ -134,7 +156,7 @@ export default function App() {
   try {
     const response = await axios.put(`${articlesUrl}/${article_id}`, article, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    })
 
     if (response.data) {
       // Update the article in the state
@@ -194,17 +216,18 @@ export default function App() {
         </nav>
         <Routes>
           <Route path="/" element={<LoginForm login={login} />} />
-          <Route path="articles" element={
+          <Route path="/articles" element={
             <>
               <ArticleForm 
               postArticle={postArticle} 
               setCurrentArticleId={setCurrentArticleId}
+              currentArticle={articles.find(art => art.article_id == currentArticleId)}
               updateArticle={updateArticle}/>
-             
+        
               <Articles 
+              currentArticleId={currentArticleId}
               articles={articles} 
               deleteArticle={deleteArticle} 
-              updateArticle={updateArticle}
               getArticles={getArticles}
               setCurrentArticleId={setCurrentArticleId}/>
             </>
