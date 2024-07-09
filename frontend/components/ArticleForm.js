@@ -38,6 +38,8 @@ export default function ArticleForm({ postArticle, updateArticle, setCurrentArti
     } else {
       postArticle(values)
     }
+    setValues(initialFormValues)
+    setCurrentArticleId(null)
   }
 
   const isDisabled = () => {
@@ -73,7 +75,7 @@ export default function ArticleForm({ postArticle, updateArticle, setCurrentArti
       </select>
       <div className="button-group">
         <button disabled={isDisabled()} id="submitArticle">Submit</button>
-        <button onClick={() => setCurrentArticleId(null)}>Cancel edit</button>
+        <button type="button" onClick={() => setCurrentArticleId(null)}>Cancel edit</button>
       </div>
     </form>
   )

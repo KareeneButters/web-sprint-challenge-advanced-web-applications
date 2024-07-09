@@ -43,7 +43,7 @@ export default function App() {
     // On success, we should set the token to local storage in a 'token' key,
     // put the server success message in its proper state, and redirect
     // to the Articles screen. Don't forget to turn off the spinner!
-    const login = async ({ username, password }) => {
+    const login = ({ username, password }) => {
       setMessage('')
       setSpinnerOn(true)
 
@@ -117,91 +117,93 @@ export default function App() {
     }
   
 
-  const postArticle = async article => {
+  const postArticle = article => {
     // ✨ implement
     // The flow is very similar to the `getArticles` function.
     // You'll know what to do! Use log statements or breakpoints
     // to inspect the response from the server.
     setMessage('')
     setSpinnerOn(true)
-    try {
-      const response = await axios.post(articlesUrl, article, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      })
-  
+
+    axios.post(articlesUrl, article, {
+      headers: { Authorization:  localStorage.getItem('token') } 
+    })
+    .then(response => {
       if (response.data) {
-        // Adds the new article to the state
         setArticles(prevArticles => [...prevArticles, response.data.article])
         setMessage(response.data.message)
       }
-    } catch (error) {
+    })
+    .catch(error => {
       if (error.response && error.response.status === 401) {
         setMessage('Your session has expired. Please log in again.')
         redirectToLogin()
       } else {
         console.error(error)
       }
-    } finally {
+    })
+    .finally(() => {
       setSpinnerOn(false)
-    }
+    })
   }
 
 
-  const updateArticle = async ({ article_id, article }) => {
+  const updateArticle = ({ article_id, article }) => {
     // ✨ implement
     // You got this!
   setMessage('')
   setSpinnerOn(true)
 
-  try {
-    const response = await axios.put(`${articlesUrl}/${article_id}`, article, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    })
-
+  axios.put(`${articlesUrl}/${article_id}`, article, {
+    headers: { Authorization: localStorage.getItem('token')},
+  })
+  .then(response => {
     if (response.data) {
-      // Update the article in the state
-      setArticles(prevArticles => prevArticles.map(a => a.id === article_id ? response.data.article : a))
+      setArticles(prevArticles => prevArticles.map(a => a.article_id === article_id ? response.data.article : a))
       setMessage(response.data.message)
     }
-  } catch (error) {
+  })
+  .catch(error => {
     if (error.response && error.response.status === 401) {
       setMessage('Your session has expired. Please log in again.')
       redirectToLogin()
     } else {
       console.error(error)
     }
-  } finally {
+  })
+  .finally(() => {
     setSpinnerOn(false)
-  }
+  })
 }
-
     // ✨ implement
-    const deleteArticle = async (article_id) => {
+    const deleteArticle = (article_id) => {
       setMessage('')
       setSpinnerOn(true)
     
-      try {
-        const response = await axios.delete(`${articlesUrl}/${article_id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        })
-    
+        axios.delete(`${articlesUrl}/${article_id}`, {
+        headers: { Authorization: localStorage.getItem('token')},
+      })
+      .then(response => {
         if (response.data) {
-          // Remove the deleted article from the state
-          setArticles(prevArticles => prevArticles.filter(a => a.id !== article_id))
+          setArticles(prevArticles => prevArticles.filter(a => a.article_id !== article_id))
           setMessage(response.data.message)
+         
         }
-      } catch (error) {
+
+      })
+      .catch(error => {
         if (error.response && error.response.status === 401) {
           setMessage('Your session has expired. Please log in again.')
           redirectToLogin()
         } else {
           console.error(error)
         }
-      } finally {
+      })
+      .finally(() => {
         setSpinnerOn(false)
-      }
-    }
+      })
 
+    }
   return (
     // ✨ fix the JSX: `Spinner`, `Message`, `LoginForm`, `ArticleForm` and `Articles` expect props ❗
     <>
